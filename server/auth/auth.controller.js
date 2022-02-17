@@ -2,49 +2,105 @@ const jwt = require('jsonwebtoken');
 const httpStatus = require('http-status');
 const APIError = require('../helpers/APIError');
 const config = require('../../config/config');
+const User = require('../user/user.model');
+const crypto = require('crypto');
 
-// sample user, used for authentication
-const user = {
-  username: 'react',
-  password: 'express'
+const apiAuth = {
+
+  async login(req, res, next) {
+    const userRequest = req.body;
+    try {
+      const user = await User.findOne({ email: userRequest.email });
+      const cipher = crypto.createCipheriv(
+        config.crypto.algorithm,
+        config.crypto.securitykey,
+        config.crypto.initVector
+      );
+      let encryptedData = cipher.update(userRequest.senha, 'utf-8', 'hex');
+      encryptedData += cipher.final('hex');
+
+      if (user.senha === encryptedData) {
+        const token = jwt.sign(
+          { email: user.email },
+          config.jwtSecret,
+          { expiresIn: 43200 }
+        );
+        return res.json(token);
+      }
+      const err = new APIError(
+        'Senha incorreta.',
+        httpStatus.UNAUTHORIZED,
+        true
+      );
+      return next(err);
+    } catch (error) {
+      const err = new APIError(
+        'Email não encontrado.',
+        httpStatus.NOT_FOUND,
+        true
+      );
+      return next(err);
+    }
+  },
+
+  async isAdmin(req, res, next) {
+    try {
+      const user = await User.findOne({ email: req.body.email });
+      return res.json({
+        isAdmin: user.email === config.email,
+      });
+    } catch (error) {
+      const err = new APIError(
+        'Email não encontrado.',
+        httpStatus.NOT_FOUND,
+        true
+      );
+      return next(err);
+    }
+  },
+
+  async getAuthUser(req, res, next) {
+    try {
+      const user = await User.findOne({ email: req.user.email });
+      return res.json({
+        user: user,
+      });
+    } catch (error) {
+      const err = new APIError(
+        'Email não encontrado.',
+        httpStatus.NOT_FOUND,
+        true
+      );
+      return next(err);
+    }
+  },
+
+  async recoverPassword(req, res, next) {
+    // const data = {
+    //   from: config.emailSender,
+    //   to: req.body.email,
+    //   subject: 'Recuperação de senha',
+    //   text: 'Testing some Mailgun awesomeness!'
+    // };
+    try {
+      const user = await User.findOne({ email: req.body.email });
+      const token = jwt.sign(
+        { email: user.email },
+        config.jwtSecret,
+        { expiresIn: 43200 }
+      );
+      const link = `${config.frontUrl}/recover/?token=${token}`;
+      res.status(httpStatus.OK).json(link);
+    } catch (error) {
+      const err = new APIError(
+        'Não foi possível enviar o email de recuperação. Email não cadastrado.',
+        httpStatus.NOT_FOUND,
+        true
+      );
+      next(err);
+    }
+  },
+
 };
 
-/**
- * Returns jwt token if valid username and password is provided
- * @param req
- * @param res
- * @param next
- * @returns {*}
- */
-function login(req, res, next) {
-  // Ideally you'll fetch this from the db
-  // Idea here was to show how jwt works with simplicity
-  if (req.body.username === user.username && req.body.password === user.password) {
-    const token = jwt.sign({
-      username: user.username
-    }, config.jwtSecret);
-    return res.json({
-      token,
-      username: user.username
-    });
-  }
-
-  const err = new APIError('Authentication error', httpStatus.UNAUTHORIZED, true);
-  return next(err);
-}
-
-/**
- * This is a protected route. Will return random number only if jwt token is provided in header.
- * @param req
- * @param res
- * @returns {*}
- */
-function getRandomNumber(req, res) {
-  // req.user is assigned by jwt middleware if valid token is provided
-  return res.json({
-    user: req.user,
-    num: Math.random() * 100
-  });
-}
-
-module.exports = { login, getRandomNumber };
+module.exports = apiAuth;

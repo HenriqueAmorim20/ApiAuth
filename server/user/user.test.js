@@ -20,8 +20,9 @@ after((done) => {
 
 describe('## User APIs', () => {
   let user = {
-    username: 'KK123',
-    mobileNumber: '1234567890'
+    nome: 'henrique',
+    email: 'KK123',
+    senha: '1234567890'
   };
 
   describe('# POST /api/users', () => {
@@ -31,12 +32,13 @@ describe('## User APIs', () => {
         .send(user)
         .expect(httpStatus.OK)
         .then((res) => {
-          expect(res.body.username).to.equal(user.username);
-          expect(res.body.mobileNumber).to.equal(user.mobileNumber);
+          expect(res.body.email).to.equal(user.email);
+          expect(res.body.senha).to.equal(user.senha);
+          expect(res.body.nome).to.equal(user.nome);
           user = res.body;
           done();
         })
-        .catch(done);
+        .catch(done());
     });
   });
 
@@ -46,11 +48,12 @@ describe('## User APIs', () => {
         .get(`/api/users/${user._id}`)
         .expect(httpStatus.OK)
         .then((res) => {
-          expect(res.body.username).to.equal(user.username);
-          expect(res.body.mobileNumber).to.equal(user.mobileNumber);
+          expect(res.body.email).to.equal(user.email);
+          expect(res.body.senha).to.equal(user.senha);
+          expect(res.body.nome).to.equal(user.nome);
           done();
         })
-        .catch(done);
+        .catch(done());
     });
 
     it('should report error with message - Not found, when user does not exists', (done) => {
@@ -67,17 +70,17 @@ describe('## User APIs', () => {
 
   describe('# PUT /api/users/:userId', () => {
     it('should update user details', (done) => {
-      user.username = 'KK';
+      user.nome = 'KK';
       request(app)
         .put(`/api/users/${user._id}`)
         .send(user)
         .expect(httpStatus.OK)
         .then((res) => {
-          expect(res.body.username).to.equal('KK');
-          expect(res.body.mobileNumber).to.equal(user.mobileNumber);
+          expect(res.body.nome).to.equal('KK');
+          expect(res.body.email).to.equal(user.email);
           done();
         })
-        .catch(done);
+        .catch(done());
     });
   });
 
@@ -90,7 +93,7 @@ describe('## User APIs', () => {
           expect(res.body).to.be.an('array');
           done();
         })
-        .catch(done);
+        .catch(done());
     });
 
     it('should get all users (with limit and skip)', (done) => {
@@ -102,7 +105,7 @@ describe('## User APIs', () => {
           expect(res.body).to.be.an('array');
           done();
         })
-        .catch(done);
+        .catch(done());
     });
   });
 
@@ -112,11 +115,11 @@ describe('## User APIs', () => {
         .delete(`/api/users/${user._id}`)
         .expect(httpStatus.OK)
         .then((res) => {
-          expect(res.body.username).to.equal('KK');
-          expect(res.body.mobileNumber).to.equal(user.mobileNumber);
+          expect(res.body.nome).to.equal('KK');
+          expect(res.body.email).to.equal(user.email);
           done();
         })
-        .catch(done);
+        .catch(done());
     });
   });
 });
